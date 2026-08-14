@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Buckets Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b1120;--surface:#111827;--surface2:#162032;--surface3:#1a2740;
+  --border:#1e2d45;--text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;
+  --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--accent:#e55a4e;--purple:#a855f7;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 28px}
+h1{font-size:1.85rem;font-weight:700;margin-bottom:20px;letter-spacing:-0.5px}
+
+/* STATUS BAR */
+.status-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot.green{background:var(--green);box-shadow:0 0 7px var(--green)}
+.dot.red{background:var(--red);box-shadow:0 0 7px var(--red)}
+.dot.yellow{background:#eab308;box-shadow:0 0 7px #eab308}
+.status-label{font-size:.84rem;font-weight:600}
+.status-label.green{color:var(--green)}.status-label.red{color:var(--red)}.status-label.yellow{color:#eab308}
+.status-time{font-size:.78rem;color:var(--muted);margin-left:4px}
+.ml-auto{margin-left:auto}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-red{background:var(--accent);color:#fff}
+.btn-dark{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+
+/* CONTROLS */
+.controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+select{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:.85rem;cursor:pointer;font-family:inherit}
+
+/* CATEGORY PILLS */
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.pill{padding:8px 16px;border-radius:999px;font-size:.82rem;font-weight:600;background:var(--accent);color:#fff;cursor:pointer;transition:opacity .15s}
+.pill:hover{opacity:.85}
+
+/* SUMMARY BAR */
+.summary{background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:24px;overflow:hidden}
+.sum-item{padding:22px 28px;text-align:center;border-right:1px solid var(--border)}
+.sum-item:last-child{border-right:none}
+.sum-label{font-size:.68rem;font-weight:600;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.sum-val{font-size:1.9rem;font-weight:700}
+.sum-val.green{color:var(--green)}.sum-val.red{color:var(--red)}
+
+/* CATEGORY CARDS GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:1100px){.cards-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.cards-grid{grid-template-columns:repeat(2,1fr)}.summary{grid-template-columns:1fr}}
+
+.cat-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:14px 16px;position:relative}
+.cat-card.over-budget{border-left-color:var(--red)}
+.cat-card.tracking-only{border-left-color:var(--blue)}
+.cat-card.no-budget{border-left-color:var(--muted)}
+
+.cat-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.cat-name{font-size:.85rem;font-weight:700;color:var(--text)}
+.badge{font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:999px}
+.badge.tracking{background:#1e3a5f;color:var(--blue)}
+.badge.pct-green{background:#14532d;color:var(--green)}
+.badge.pct-red{background:#450a0a;color:var(--red)}
+.badge.pct-yellow{background:#422006;color:#f59e0b}
+.badge.zero{background:var(--surface2);color:var(--muted)}
+
+.cat-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px}
+.cat-stat-label{font-size:.65rem;color:var(--muted);margin-bottom:2px}
+.cat-stat-val{font-size:.82rem;font-weight:600}
+.cat-stat-val.red{color:var(--red)}.cat-stat-val.green{color:var(--green)}.cat-stat-val.muted{color:var(--muted2)}
+
+.cat-tracking-row{margin-bottom:8px}
+.cat-tracking-label{font-size:.65rem;color:var(--muted);margin-bottom:2px}
+.cat-tracking-val{font-size:.9rem;font-weight:600;color:var(--green)}
+.cat-tracking-val.red{color:var(--red)}
+
+.cat-txn{font-size:.72rem;color:var(--muted);margin-top:6px}
+
+/* TRANSACTIONS TABLE */
+.section-title{font-size:.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.card-full{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:.7rem;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.cat-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:600;background:var(--surface2);color:var(--muted2)}
+
+.loading-msg{color:var(--muted);font-size:.85rem;text-align:center;padding:40px}
+.error-box{background:#1a0a0a;border:1px solid #450a0a;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:.82rem;color:#fca5a5}
+.error-box strong{display:block;margin-bottom:4px;color:var(--red)}
+.help-steps{margin-top:8px;padding-left:16px;color:var(--muted2)}
+.help-steps li{margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<h1>Budget Buckets Dashboard</h1>
+
+<!-- STATUS -->
+<div class="status-bar">
+  <div class="dot" id="statusDot"></div>
+  <span class="status-label" id="statusLabel">Connecting…</span>
+  <span class="status-time" id="statusTime"></span>
+  <div class="ml-auto">
+    <button class="btn btn-red" onclick="loadData()">↻ Refresh Data</button>
+  </div>
+</div>
+
+<!-- ERROR BOX (hidden by default) -->
+<div class="error-box" id="errorBox" style="display:none">
+  <strong>⚠ Connection Error — Google Sheets not published</strong>
+  To fix this, publish your sheet:
+  <ol class="help-steps">
+    <li>Open your Google Sheet</li>
+    <li>Click <strong>File → Share → Publish to web</strong></li>
+    <li>Select <strong>"Entire Document"</strong> and <strong>"CSV"</strong></li>
+    <li>Click <strong>Publish</strong>, then click <strong>Refresh Data</strong> above</li>
+  </ol>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <select id="monthSelect" onchange="loadData()">
+    <option value="February">February</option>
+    <option value="March">March</option>
+    <option value="April">April</option>
+    <option value="May">May</option>
+    <option value="June">June</option>
+    <option value="July">July</option>
+    <option value="August" selected>August</option>
+    <option value="September">September</option>
+    <option value="October">October</option>
+    <option value="November">November</option>
+    <option value="December">December</option>
+  </select>
+  <select id="yearSelect">
+    <option value="2026">2026</option>
+  </select>
+  <button class="btn btn-dark">🗂 Manage Categories</button>
+  <button class="btn btn-dark">⚙ Edit Budgets</button>
+</div>
+
+<!-- CATEGORY PILLS -->
+<div class="pills" id="pillsRow"></div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="sum-item">
+    <div class="sum-label">Total Budget</div>
+    <div class="sum-val" id="sumBudget">$0</div>
+  </div>
+  <div class="sum-item">
+    <div class="sum-label">Total Spent</div>
+    <div class="sum-val red" id="sumSpent">$0</div>
+  </div>
+  <div class="sum-item">
+    <div class="sum-label">Remaining</div>
+    <div class="sum-val" id="sumRemaining">$0</div>
+  </div>
+</div>
+
+<!-- CATEGORY CARDS -->
+<div class="cards-grid" id="cardsGrid">
+  <div class="loading-msg" style="grid-column:1/-1">Loading data…</div>
+</div>
+
+<!-- TRANSACTIONS TABLE -->
+<div class="card-full">
+  <div class="section-title">All Transactions</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Category</th>
+          <th>Paid From</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="txnBody"><tr><td colspan="6" class="loading-msg">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+const PUBLISHED_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTGa78ASQCS6TviDBuzeIeOggs9MDVxHHXajOx0NOfEoZC8kRvjjoFPDopwvkoQeOtXN-moXC3XEMlZ';
+
+// Budget targets per category ($ amounts) — edit these to match your "Edit Budgets"
+// Set to 0 for "Tracking" mode (income sources / no fixed budget)
+const BUDGETS = {
+  'Daily Saver':           0,   // Tracking (income)
+  'Sudhoff Enterprises':   0,   // Tracking (income)
+  'Youtube':               0,   // Tracking (income)
+  'Car Business':          0,   // Tracking
+  'Business Subscriptions':0,
+  'Business Variable':     0,
+  'Personal Subscriptions':0,
+  'Rent':                  0,
+  'Grocery':             300,
+  'Health Wellness':       0,
+  'Haircut':               0,
+  'Car Personal':          0,
+  'Car':                   0,
+  'Amazon':                0,
+  'Pet':                   0,
+  'Going Out':             0,
+  'Travel':                0,
+};
+
+// Categories that are income/tracking (no budget, show as "Tracking")
+const TRACKING_CATS = new Set(['Daily Saver','Sudhoff Enterprises','Youtube','Car Business']);
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+const fmt  = n => '$' + Math.abs(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtI = n => '$' + Math.abs(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+const n2   = s => parseFloat((s||'').replace(/[^0-9.\-]/g,''))||0;
+
+function csvLine(line) {
+  const res=[]; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    if(line[i]==='"'){inQ=!inQ;}
+    else if(line[i]===','&&!inQ){res.push(cur.trim());cur='';}
+    else{cur+=line[i];}
+  }
+  res.push(cur.trim());
+  return res;
+}
+
+// ─── LOAD ──────────────────────────────────────────────────────────────────
+async function loadData() {
+  const month = document.getElementById('monthSelect').value;
+  setStatus('loading');
+  document.getElementById('errorBox').style.display='none';
+
+  const url = `${PUBLISHED_BASE}/pub?output=csv&sheet=${encodeURIComponent(month)}&cachebust=${Date.now()}`;
+
+  try {
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text = await res.text();
+    if(text.includes('Signin') || text.includes('accounts.google')) throw new Error('not_published');
+    parseAndRender(text, month);
+    setStatus('ok');
+  } catch(e) {
+    setStatus('error');
+    document.getElementById('errorBox').style.display='block';
+    document.getElementById('cardsGrid').innerHTML='<div class="loading-msg" style="grid-column:1/-1;color:#ef4444">Could not load data. See instructions above.</div>';
+  }
+}
+
+// ─── PARSE ─────────────────────────────────────────────────────────────────
+function parseAndRender(text, month) {
+  const lines = text.split('\n').map(l=>csvLine(l));
+
+  // ── Parse summary section (rows 1-22 approx)
+  // Row 0 = headers (month name, "", "", "Costs Total", "Amount", "Income", "Amount", ...)
+  // Rows with category names in col A and totals in col B
+  const summaryMap = {}; // { categoryName: amount }
+
+  let txnStartRow = -1;
+
+  for(let i=0;i<lines.length;i++){
+    const row = lines[i];
+    const a = (row[0]||'').replace(/"/g,'').trim();
+    const b = (row[1]||'').replace(/"/g,'').trim();
+
+    // Detect transaction header row — "Description" in col A
+    if(a === 'Description' && (row[3]||'').replace(/"/g,'').trim()==='Category'){
+      txnStartRow = i+1;
+      break;
+    }
+
+    // Skip section headers (colored rows like "Business", "Personal")
+    if(!b || b==='0' || b==='Total') {
+      if(a && b==='0') summaryMap[a]=0;
+      continue;
+    }
+
+    const val = n2(b);
+    if(a && !isNaN(val) && a!=='Total') {
+      summaryMap[a] = val;
+    }
+  }
+
+  // ── Parse transactions
+  const txns = [];
+  if(txnStartRow > 0){
+    // Find header row to get col indices
+    const hdr = lines[txnStartRow-1].map(c=>c.replace(/"/g,'').trim());
+    const ci = (name) => hdr.findIndex(h=>h.toLowerCase().includes(name.toLowerCase()));
+    const iDesc=0, iDate=ci('date'), iAmt=ci('amount'), iCat=ci('category'), iNotes=ci('notes'), iPaid=ci('paid');
+
+    for(let i=txnStartRow;i<lines.length;i++){
+      const row=lines[i];
+      const desc=(row[iDesc]||'').replace(/"/g,'').trim();
+      if(!desc) continue;
+      txns.push({
+        desc,
+        date:(row[iDate]||'').replace(/"/g,'').trim(),
+        amount:n2((row[iAmt]||'').replace(/"/g,'')),
+        category:(row[iCat]||'').replace(/"/g,'').trim(),
+        notes:(row[iNotes]||'').replace(/"/g,'').trim(),
+        paidFrom:(row[iPaid]||'').replace(/"/g,'').trim(),
+      });
+    }
+  }
+
+  render(summaryMap, txns, month);
+}
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+function render(summaryMap, txns, month) {
+  // Get all categories present
+  const catNames = Object.keys(summaryMap).filter(k=>k!=='Total'&&k!=='');
+
+  // Build pills
+  const pills = document.getElementById('pillsRow');
+  pills.innerHTML = catNames.map(c=>`<div class="pill">${c}</div>`).join('');
+
+  // Compute totals
+  let totalBudget=0, totalSpent=0;
+  catNames.forEach(c=>{
+    const budget = BUDGETS[c]||0;
+    const spent  = summaryMap[c]||0;
+    if(budget>0) totalBudget+=budget;
+    if(!TRACKING_CATS.has(c)) totalSpent+=spent;
+  });
+  const totalRemaining = totalBudget - totalSpent;
+
+  document.getElementById('sumBudget').textContent   = fmtI(totalBudget);
+  document.getElementById('sumSpent').textContent    = fmtI(totalSpent);
+  const remEl = document.getElementById('sumRemaining');
+  remEl.textContent = (totalRemaining<0?'-':'')+fmtI(totalRemaining);
+  remEl.className = 'sum-val '+(totalRemaining>=0?'green':'red');
+
+  // Count transactions per category
+  const txnCount = {};
+  txns.forEach(t=>{ txnCount[t.category]=(txnCount[t.category]||0)+1; });
+
+  // Build cards
+  const grid = document.getElementById('cardsGrid');
+  if(!catNames.length){
+    grid.innerHTML='<div class="loading-msg" style="grid-column:1/-1">No category data found for '+month+'</div>';
+    return;
+  }
+
+  grid.innerHTML = catNames.map(cat=>{
+    const spent  = summaryMap[cat]||0;
+    const budget = BUDGETS[cat]||0;
+    const remaining = budget - spent;
+    const pct = budget>0 ? Math.round((spent/budget)*100) : 0;
+    const isTracking = TRACKING_CATS.has(cat);
+    const count = txnCount[cat]||0;
+
+    let cardClass = 'cat-card';
+    let badgeHtml = '';
+
+    if(isTracking){
+      cardClass += ' tracking-only';
+      badgeHtml = `<span class="badge tracking">Tracking</span>`;
+    } else if(budget===0){
+      cardClass += ' no-budget';
+      badgeHtml = `<span class="badge zero">0%</span>`;
+    } else if(pct>=100){
+      cardClass += ' over-budget';
+      badgeHtml = `<span class="badge pct-red">${pct}%</span>`;
+    } else if(pct>=75){
+      badgeHtml = `<span class="badge pct-yellow">${pct}%</span>`;
+    } else {
+      badgeHtml = `<span class="badge pct-green">${pct}%</span>`;
+    }
+
+    let statsHtml = '';
+    if(isTracking){
+      statsHtml = `
+        <div class="cat-tracking-row">
+          <div class="cat-tracking-label">Spent</div>
+          <div class="cat-tracking-val ${spent<0?'red':''}">${fmt(spent)}</div>
+        </div>`;
+    } else if(budget>0){
+      statsHtml = `
+        <div class="cat-stats">
+          <div>
+            <div class="cat-stat-label">Budget</div>
+            <div class="cat-stat-val muted">${fmtI(budget)}</div>
+          </div>
+          <div>
+            <div class="cat-stat-label">Spent</div>
+            <div class="cat-stat-val red">${fmt(spent)}</div>
+          </div>
+          <div>
+            <div class="cat-stat-label">Remaining</div>
+            <div class="cat-stat-val ${remaining>=0?'green':'red'}">${remaining<0?'-':''}${fmtI(remaining)}</div>
+          </div>
+        </div>`;
+    } else {
+      // no budget set
+      statsHtml = `
+        <div class="cat-stats">
+          <div>
+            <div class="cat-stat-label">Budget</div>
+            <div class="cat-stat-val muted">$0</div>
+          </div>
+          <div>
+            <div class="cat-stat-label">Spent</div>
+            <div class="cat-stat-val red">${fmt(spent)}</div>
+          </div>
+          <div>
+            <div class="cat-stat-label">Remaining</div>
+            <div class="cat-stat-val red">-${fmt(spent)}</div>
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="${cardClass}">
+        <div class="cat-header">
+          <div class="cat-name">${cat}</div>
+          ${badgeHtml}
+        </div>
+        ${statsHtml}
+        ${count>0?`<div class="cat-txn">${count} transaction${count!==1?'s':''}</div>`:''}
+      </div>`;
+  }).join('');
+
+  // Transactions table
+  const tbody = document.getElementById('txnBody');
+  if(!txns.length){
+    tbody.innerHTML='<tr><td colspan="6" class="loading-msg">No transactions found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = txns.map(t=>`
+    <tr>
+      <td>${t.desc}</td>
+      <td>${t.date}</td>
+      <td class="${t.amount<0?'pos':'neg'}">${fmt(t.amount)}</td>
+      <td><span class="cat-tag">${t.category}</span></td>
+      <td>${t.paidFrom}</td>
+      <td style="color:var(--muted);font-size:.75rem">${t.notes}</td>
+    </tr>`).join('');
+}
+
+// ─── STATUS ────────────────────────────────────────────────────────────────
+function setStatus(state){
+  const dot=document.getElementById('statusDot');
+  const lbl=document.getElementById('statusLabel');
+  const tim=document.getElementById('statusTime');
+  if(state==='ok'){
+    dot.className='dot green'; lbl.className='status-label green';
+    lbl.textContent='Google Sheets API Connected';
+    tim.textContent='Last updated: '+new Date().toLocaleTimeString();
+  } else if(state==='error'){
+    dot.className='dot red'; lbl.className='status-label red';
+    lbl.textContent='Connection Error'; tim.textContent='';
+  } else {
+    dot.className='dot yellow'; lbl.className='status-label yellow';
+    lbl.textContent='Loading…'; tim.textContent='';
+  }
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+// Set month dropdown to current month
+const now = new Date();
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const curMonth = monthNames[now.getMonth()];
+const sel = document.getElementById('monthSelect');
+for(let o of sel.options){ if(o.value===curMonth){ o.selected=true; break; } }
+
+loadData();
+</script>
+</body>
+</html>
