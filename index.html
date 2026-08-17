@@ -122,7 +122,7 @@ async function loadData(){
   const month=document.getElementById('monthSel').value;
   setSt('loading');document.getElementById('errorBox').style.display='none';
   try{
-    const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(month+'!A1:B30')+'?key='+API_KEY;
+    const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(month)+'!A1:Z500?key='+API_KEY;
     const r=await fetch(url);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const data=await r.json();
