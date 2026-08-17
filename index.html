@@ -78,7 +78,7 @@ ol{padding-left:16px;color:#94a3b8;line-height:1.8}
 </div>
 <div class="error-box" id="errorBox" style="display:none">
   <strong>Connection Error</strong>
-  <ol><li>Open your Google Sheet</li><li>File &rarr; Share &rarr; Publish to web</li><li>Choose Entire Document + CSV &rarr; Publish</li><li>Click Refresh Data above</li></ol>
+  <ol><li>Open your Google Sheet</li><li>Share &rarr; General access &rarr; "Anyone with the link"</li><li>Confirm the Sheet ID and API key in index.html are correct</li><li>Click Refresh Data above</li></ol>
 </div>
 <div class="controls">
   <select id="monthSel" onchange="loadData()">
@@ -108,51 +108,35 @@ ol{padding-left:16px;color:#94a3b8;line-height:1.8}
   </div>
 </div>
 <script>
-const PUB='https://docs.google.com/spreadsheets/d/e/2PACX-1vTGa78ASQCS6TviDBuzeIeOggs9MDVxHHXajOx0NOfEoZC8kRvjjoFPDopwvkoQeOtXN-moXC3XEMlZ';
+const SHEET_ID='1gKpOyKyuBzTDX05QH5gFcINFJQU_ctZ10xYlY2CEEy4';
+const API_KEY='AIzaSyADpoUhkf5hku0yVVjxmTfCNSqdUNl0iUg';
 const BUDGETS={'Grocery':300};
 const TRACKING=new Set(['Daily Saver','Sudhoff Enterprises','Youtube']);
 const CATEGORY_NAMES=['Daily Saver','Sudhoff Enterprises','Youtube','Business Subscriptions','Business Variable','Personal Subscriptions','Rent','Grocery','Health Wellness','Haircut','Car Personal','Car Business','Amazon','Pet','Going Out','Travel'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const fmt=v=>'$'+Math.abs(v||0).toFixed(2);
 const fmtI=v=>'$'+Math.round(Math.abs(v||0)).toLocaleString();
-const cl=s=>(s||'').replace(/^"|"$/g,'').trim();
+const cl=s=>(s||'').toString().trim();
 const num=s=>parseFloat(cl(s).replace(/[^0-9.-]/g,''))||0;
-function parseLine(line){const o=[];let c='',q=false;for(let i=0;i<line.length;i++){if(line[i]==='"')q=!q;else if(line[i]===','&&!q){o.push(cl(c));c='';}else c+=line[i];}o.push(cl(c));return o;}
 async function loadData(){
   const month=document.getElementById('monthSel').value;
   setSt('loading');document.getElementById('errorBox').style.display='none';
   try{
-    const r=await fetch(PUB+'/pub?output=csv&sheet='+encodeURIComponent(month)+'&_='+Date.now());
+    const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(month+'!A1:B30')+'?key='+API_KEY;
+    const r=await fetch(url);
     if(!r.ok)throw new Error('HTTP '+r.status);
-    const t=await r.text();
-    if(t.includes('accounts.google')||t.includes('ServiceLogin'))throw new Error('auth');
-    parse(t);setSt('ok');
+    const data=await r.json();
+    parse(data.values||[]);setSt('ok');
   }catch(e){setSt('error');document.getElementById('errorBox').style.display='block';
     document.getElementById('grid').innerHTML='<div class="loading-msg" style="grid-column:1/-1;color:#ef4444">Could not load data. See above.</div>';}
 }
-function parse(csv){
-  const rows=csv.split('\n').map(parseLine);
+function parse(rows){
   const map={};
   CATEGORY_NAMES.forEach(name=>{
-    const row=rows.find(r=>(r[0]||'').toLowerCase()===name.toLowerCase());
+    const row=rows.find(r=>cl(r[0]).toLowerCase()===name.toLowerCase());
     if(row)map[name]=num(row[1]);
   });
-  let txnHdr=-1;
-  for(let i=0;i<rows.length;i++){
-    if((rows[i][0]||'').toLowerCase()==='description'&&rows[i].some(c=>c.toLowerCase()==='category')){txnHdr=i;break;}
-  }
-  const txns=[];
-  if(txnHdr>=0){
-    const h=rows[txnHdr];
-    const ix=n=>h.findIndex(c=>c.toLowerCase().includes(n));
-    const iD=0,iDt=ix('date'),iAm=ix('amount'),iCa=ix('category'),iNo=ix('notes'),iPa=ix('paid');
-    for(let i=txnHdr+1;i<rows.length;i++){
-      const r=rows[i];if(!r[0])continue;
-      txns.push({desc:r[0],date:iDt>=0?r[iDt]:'',amount:iAm>=0?num(r[iAm]):0,
-        category:iCa>=0?r[iCa]:'',notes:iNo>=0?r[iNo]:'',paidFrom:iPa>=0?r[iPa]:''});
-    }
-  }
-  render(map,txns);
+  render(map,[]);
 }
 function render(map,txns){
   const cats=Object.keys(map);
