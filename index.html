@@ -111,14 +111,12 @@ ol{padding-left:16px;color:#94a3b8;line-height:1.8}
 const PUB='https://docs.google.com/spreadsheets/d/e/2PACX-1vTGa78ASQCS6TviDBuzeIeOggs9MDVxHHXajOx0NOfEoZC8kRvjjoFPDopwvkoQeOtXN-moXC3XEMlZ';
 const BUDGETS={'Grocery':300};
 const TRACKING=new Set(['Daily Saver','Sudhoff Enterprises','Youtube']);
-const SKIP=new Set(['business','personal','total','description','month']);
+const CATEGORY_NAMES=['Daily Saver','Sudhoff Enterprises','Youtube','Business Subscriptions','Business Variable','Personal Subscriptions','Rent','Grocery','Health Wellness','Haircut','Car Personal','Car Business','Amazon','Pet','Going Out','Travel'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const MONTH_RE=new RegExp('^('+MONTHS.join('|')+')\\b','i');
 const fmt=v=>'$'+Math.abs(v||0).toFixed(2);
 const fmtI=v=>'$'+Math.round(Math.abs(v||0)).toLocaleString();
 const cl=s=>(s||'').replace(/^"|"$/g,'').trim();
 const num=s=>parseFloat(cl(s).replace(/[^0-9.-]/g,''))||0;
-const numOrNull=s=>{const c=cl(s).replace(/[^0-9.-]/g,'');if(c===''||isNaN(parseFloat(c)))return null;return parseFloat(c);};
 function parseLine(line){const o=[];let c='',q=false;for(let i=0;i<line.length;i++){if(line[i]==='"')q=!q;else if(line[i]===','&&!q){o.push(cl(c));c='';}else c+=line[i];}o.push(cl(c));return o;}
 async function loadData(){
   const month=document.getElementById('monthSel').value;
@@ -134,17 +132,14 @@ async function loadData(){
 }
 function parse(csv){
   const rows=csv.split('\n').map(parseLine);
-  const map={};let txnHdr=-1;
+  const map={};
+  CATEGORY_NAMES.forEach(name=>{
+    const row=rows.find(r=>(r[0]||'').toLowerCase()===name.toLowerCase());
+    if(row)map[name]=num(row[1]);
+  });
+  let txnHdr=-1;
   for(let i=0;i<rows.length;i++){
-    const a=rows[i][0],b=rows[i][1];
-    if(a.toLowerCase()==='description'&&rows[i].some(c=>c.toLowerCase()==='category')){txnHdr=i;break;}
-    if(!a)continue;
-    if(SKIP.has(a.toLowerCase()))continue;
-    if(MONTH_RE.test(a))continue;
-    if(b===''||b.toLowerCase()==='total')continue;
-    const v=numOrNull(b);
-    if(v===null)continue;
-    map[a]=v;
+    if((rows[i][0]||'').toLowerCase()==='description'&&rows[i].some(c=>c.toLowerCase()==='category')){txnHdr=i;break;}
   }
   const txns=[];
   if(txnHdr>=0){
