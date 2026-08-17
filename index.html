@@ -82,10 +82,10 @@ ol{padding-left:16px;color:#94a3b8;line-height:1.8}
 </div>
 <div class="controls">
   <select id="monthSel" onchange="loadData()">
-    <option value="February">February</option><option value="March">March</option>
-    <option value="April">April</option><option value="May">May</option>
-    <option value="June">June</option><option value="July">July</option>
-    <option value="August" selected>August</option><option value="September">September</option>
+    <option value="February ">February</option><option value="March">March</option>
+    <option value="April ">April</option><option value="May">May</option>
+    <option value="June ">June</option><option value="July ">July</option>
+    <option value="August " selected>August</option><option value="September ">September</option>
     <option value="October">October</option><option value="November">November</option>
     <option value="December">December</option>
   </select>
@@ -177,7 +177,7 @@ function setSt(s){
 }
 const cur=MONTHS[new Date().getMonth()];
 const sel=document.getElementById('monthSel');
-for(const o of sel.options){if(o.value===cur){o.selected=true;break;}}
+for(const o of sel.options){if(o.value.trim()===cur){o.selected=true;break;}}
 loadData();
 </script>
 </body>
